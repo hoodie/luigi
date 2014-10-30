@@ -1,6 +1,7 @@
 require 'pp'
 require 'ostruct'
 require 'fileutils'
+require 'yaml'
 require File.dirname(__FILE__) + '/spec_helper'
 
 $SETTINGS = YAML::load(File.open(File.join File.dirname(__FILE__), "../default-settings.yml"))
@@ -13,10 +14,10 @@ FileUtils.rm_rf reset_path if File.exists? reset_path
 describe ProjectsPlumber do
   #this happens before every 'it'
   before do
-    @plumber  = described_class.new $SETTINGS, InvoiceProject
-    @plumber1 = described_class.new $SETTINGS, InvoiceProject
-    @plumber2 = described_class.new $SETTINGS, InvoiceProject
-    @plumber3 = described_class.new $SETTINGS, InvoiceProject
+    @plumber  = described_class.new $SETTINGS, PlumberProject
+    @plumber1 = described_class.new $SETTINGS, PlumberProject
+    @plumber2 = described_class.new $SETTINGS, PlumberProject
+    @plumber3 = described_class.new $SETTINGS, PlumberProject
   end
 
   context "with no directories" do

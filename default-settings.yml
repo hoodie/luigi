@@ -17,7 +17,7 @@ templates:
 
 ## CAREFUL HERE
 project_file_extension: .yml
-use_git: true
+use_git: false
 latex:   pdflatex
 
 defaults:
@@ -37,19 +37,4 @@ defaults:
         - "Wir bitten um eine Begleichung des Betrags innerhalb von 14 Tagen nach Erhalt der Rechnung."
       signature: Mit freundlichen Grüßen
 
-currency_symbol: €
-
-gender_matches:
-  herr: male
-  frau: female
-  professor: male
-  professorin: female
-
-lang_addressing:
-  de:
-    male: Sehr geehrter
-    female: Sehr geehrte
-  en:
-    male: Dear
-    female: Dear
 ...

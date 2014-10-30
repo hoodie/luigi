@@ -2,9 +2,9 @@
 require 'fileutils'
 
 libpath = File.dirname __FILE__
-require File.join libpath, "gitplumber.rb"
-require File.join libpath, "AsciiSanitizer.rb"
-require File.join libpath, "shell.rb"
+require File.join libpath, "ProjectPlumber/gitplumber"
+require File.join libpath, "ProjectPlumber/ShellSanitizer"
+require File.join libpath, "ProjectPlumber/shell"
 
 
 ## requires a project_class
@@ -21,7 +21,7 @@ class ProjectsPlumber
   attr_writer :project_class
 
   include GitPlumber
-  include Shell
+  include ProjectPlumber::Shell
 
 
   def initialize(settings = $SETTINGS, project_class = nil)
@@ -101,8 +101,8 @@ class ProjectsPlumber
   # creates new project_dir and project_file
   # returns project object
   def new_project(_name)
-    _name = AsciiSanitizer.process _name
-    name = AsciiSanitizer.clean_path _name
+    _name = ShellSanitizer.process _name
+    name = ShellSanitizer.clean_path _name
 
     project_name   = _name
     settings       = @settings
@@ -164,8 +164,8 @@ class ProjectsPlumber
 
   def open_project project
     if project.class == String
-      project = AsciiSanitizer.process    project
-      project = AsciiSanitizer.clean_path project
+      project = ShellSanitizer.process    project
+      project = ShellSanitizer.clean_path project
       open_projects()
       project = lookup(project)
     end
@@ -224,8 +224,8 @@ class ProjectsPlumber
   #
   # untested
   def get_project_file_path(name, dir=:working, year=Date.today.year)
-      name = AsciiSanitizer.process    name
-      name = AsciiSanitizer.clean_path name
+      name = ShellSanitizer.process    name
+      name = ShellSanitizer.clean_path name
       
     folder = get_project_folder(name, dir, year)
     if folder
@@ -246,8 +246,8 @@ class ProjectsPlumber
   #
   # TODO untested for archives
   def get_project_folder( name, dir=:working, year=Date.today.year )
-    name = AsciiSanitizer.process    name
-    name = AsciiSanitizer.clean_path name
+    name = ShellSanitizer.process    name
+    name = ShellSanitizer.clean_path name
     year = year.to_s
     target = File.join @dirs[dir], name       if dir == :working
     target = File.join @dirs[dir], year, name if dir == :archive
@@ -336,7 +336,7 @@ class ProjectsPlumber
   ##
   #  Move to archive directory
   #  @name 
-  ## ProjectsPlumber.archive_project should use AsciiSanitizer
+  ## ProjectsPlumber.archive_project should use ShellSanitizer
   def archive_project(project, year = nil, prefix = '')
     project = open_project project
     return false unless project.class == @project_class

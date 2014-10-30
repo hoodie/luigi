@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-class AsciiSanitizer
+class ShellSanitizer 
   REPLACE_HASH = {
     ?“ => '"', ?” => '"', ?‘ => "'", ?’ => "'", ?„ => '"',
 

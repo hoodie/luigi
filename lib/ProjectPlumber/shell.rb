@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+module ProjectPlumber
 module Shell
 
   def logs(*strings)
@@ -53,4 +54,5 @@ module Shell
       STDOUT.flush
     end
   end
+end
 end

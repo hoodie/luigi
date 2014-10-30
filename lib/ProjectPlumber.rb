@@ -20,7 +20,7 @@ class ProjectsPlumber
 
   attr_writer :project_class
 
-  include GitPlumber
+  include ProjectPlumber::GitPlumber
   include ProjectPlumber::Shell
 
 

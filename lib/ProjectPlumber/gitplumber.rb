@@ -15,6 +15,7 @@
 require 'git'
 require 'logger'
 
+module ProjectPlumber
 module GitPlumber
 
   def open_git
@@ -145,4 +146,5 @@ module GitPlumber
   end
 
 
+end
 end

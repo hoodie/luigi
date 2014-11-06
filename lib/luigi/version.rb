@@ -1,3 +1,3 @@
-module ProjectPlumber
+module Luigi
   VERSION = '0.0.0'
 end

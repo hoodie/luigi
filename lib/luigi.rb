@@ -2,14 +2,12 @@
 require 'fileutils'
 require 'logger'
 
-libpath = File.dirname __FILE__
-require File.join libpath, "ProjectPlumber/gitplumber"
-require File.join libpath, "ProjectPlumber/ShellSanitizer"
-
+require File.join File.dirname(__FILE__), "luigi/gitplumber"
+require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"
 
 ## requires a project_class
 # project_class must implement: name, date
-class ProjectPlumber
+class Luigi
 
   attr_reader :dirs,
     :opened_projects,
@@ -20,7 +18,7 @@ class ProjectPlumber
 
   attr_writer :project_class
 
-  include Luigi::GitPlumber
+  include GitPlumber
 
 
   def initialize(settings, project_class = nil)
@@ -337,7 +335,7 @@ class ProjectPlumber
   ##
   #  Move to archive directory
   #  @name 
-  ## ProjectPlumber.archive_project should use ShellSanitizer
+  ## Luigi.archive_project should use ShellSanitizer
   def archive_project(project, year = nil, prefix = '')
     project = open_project project
     return false unless project.class == @project_class

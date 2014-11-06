@@ -13,18 +13,14 @@ dirs:
 
 templates:
   project:  templates/blank.yml.erb
-  document: templates/document.tex.erb
+  #document: templates/document.tex.erb
 
 ## CAREFUL HERE
 project_file_extension: .yml
 use_git: false
-latex:   pdflatex
+use_erb: false
 
 defaults:
-  tax: 0.19
-  lang: de
-  canceled: false
-
   messages:
     de:
       offer: 

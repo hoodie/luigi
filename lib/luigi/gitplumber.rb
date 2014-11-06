@@ -15,7 +15,6 @@
 require 'git'
 require 'logger'
 
-module Luigi
 module GitPlumber
 
   def open_git
@@ -147,5 +146,4 @@ module GitPlumber
   end
 
 
-end
 end

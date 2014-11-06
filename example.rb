@@ -1,15 +1,15 @@
-require File.join File.dirname(__FILE__) "../lib/ProjectPlumber"
-require File.join File.dirname(__FILE__) "../lib/PlumberProject"
+require File.join File.dirname(__FILE__), "./lib/Luigi.rb"
+require File.join File.dirname(__FILE__), "./lib/PlumberProject"
 
 
 settings = {
   "dirs" => {
-    "storage":"caterings",
-    "working":"working",
-    "archive":"archive",
+    "storage" => "caterings",
+    "working" => "working",
+    "archive" => "archive",
   },
 
-  "templates_path" => nil # defaults to scriptpath/templates
+  "templates_path" => nil, # defaults to scriptpath/templates
   "templates" => {
     "project" => "black.yml.erb"
   },
@@ -18,4 +18,4 @@ settings = {
   "project_class" => PlumberProject
 }
 
-plumber = ProjectPlumber.new settings
+plumber = Luigi.new settings

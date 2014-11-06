@@ -1,6 +1,6 @@
-# ProjectPlumber
+# Luigi
 
-ProjectPlumber ( perhaps "Luigi" ) is a library that does the plumbing for reoccurring projects.
+Luigi ( perhaps "Luigi" ) is a library that does the plumbing for reoccurring projects.
 
 I still need to separate this cleanly from ascii-invoicer ( only in order to put it back in as a dependency )
 

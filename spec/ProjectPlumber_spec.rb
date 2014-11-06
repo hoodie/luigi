@@ -12,7 +12,7 @@ reset_path = File.join $SETTINGS['path'], $SETTINGS['dirs']['storage']
 FileUtils.rm_rf reset_path if File.exists? reset_path
 
 
-describe ProjectPlumber do
+describe Luigi do
   #this happens before every 'it'
   before do
     @plumber  = described_class.new $SETTINGS, PlumberProject

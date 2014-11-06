@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 require 'rubygems' unless defined? Gem
-require File.dirname(__FILE__) + "/lib/ProjectPlumber/version"
+require File.dirname(__FILE__) + "/lib/luigi/version"
 
 Gem::Specification.new do |s|
-  s.name        = "Luigi"
-  s.version     = ProjectPlumber::VERSION
+  s.name        = "luigi"
+  s.version     = Luigi::VERSION
   s.authors     = ["Hendrik Sollich"]
   s.email       = "hendrik@hoodie.de"
   s.homepage    = "https://github.com/hoodie/luigi"

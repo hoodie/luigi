@@ -14,6 +14,7 @@
 
 require 'git'
 require 'logger'
+require 'textboxes'
 
 module GitPlumber
 
@@ -29,7 +30,7 @@ module GitPlumber
   end
 
   def git_log(count = 30)
-    table = TableBox.new
+    table = Textboxes.new
     table.style[:border] = false
     @git.log(count = count).to_a.reverse.each do |commit|
       table.add_row [

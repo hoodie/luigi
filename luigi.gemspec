@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/hoodie/luigi"
   s.summary     = "luigi - a plumber"
   s.description = ""
-  s.required_ruby_version     = '>= 2.1'
+  s.required_ruby_version     = '>= 1.9'
   s.files = Dir.glob('lib/*') + Dir.glob('lib/*/*')
   s.extra_rdoc_files = ["README.md", "LICENSE.md"]
   s.license = 'GPL'

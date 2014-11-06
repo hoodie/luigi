@@ -24,11 +24,12 @@ class ProjectsPlumber
   include ProjectPlumber::Shell
 
 
-  def initialize(settings = $SETTINGS, project_class = nil)
+  def initialize(settings = SETTINGS, project_class = nil)
     @settings        = settings
     @opened_projects = []
     @project_class   = project_class
     @file_extension  = settings['project_file_extension']
+    @using_git       = settings['use_git']
 
     error "need a project_class" if project_class.nil?
 
@@ -153,7 +154,7 @@ class ProjectsPlumber
     @project_paths   = {}
     @opened_paths.each {|path|
       project = @project_class.new path
-      if project.STATUS != :unparsable
+      if project.STATUS == :ok
         @opened_projects = @opened_projects + [ project ]
       end
       @project_paths[project.name] = path
@@ -170,6 +171,7 @@ class ProjectsPlumber
       project = lookup(project)
     end
     return project if project.class == @project_class
+    return false
   end
 
 
@@ -190,6 +192,7 @@ class ProjectsPlumber
     p = lookup(name)
     return @project_paths[p.name] unless p.nil?
     error "there is no project #{name}"
+    return false
   end
   
   
@@ -373,7 +376,7 @@ class ProjectsPlumber
     return false unless project.class == @project_class
 
     name         = project.name
-    path         = project.data :project_path
+    path         = project.path
     cleaned_name = File.basename(path,@file_extension)
     source       = get_project_folder name, :archive, year
     target       = File.join @dirs[:working], cleaned_name

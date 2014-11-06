@@ -19,6 +19,7 @@ module ProjectPlumber
 module GitPlumber
 
   def open_git
+    return false unless @using_git
     begin
       @git = Git.open @dirs[:storage]
       return true

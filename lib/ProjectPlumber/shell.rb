@@ -29,7 +29,6 @@ module Shell
 
   def error(msg)
     STDERR.puts("ERROR: #{msg}")
-    exit 1
   end
 
   def do_ask

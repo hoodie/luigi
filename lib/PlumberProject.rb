@@ -23,6 +23,10 @@ class PlumberProject
     123
   end
 
+  def STATUS
+    :ok # at least :ok or anything else
+  end
+
   def date
     return Date.today
 

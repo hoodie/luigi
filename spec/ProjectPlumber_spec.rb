@@ -11,7 +11,8 @@ $SETTINGS['dirs']['storage'] = "rspec_projects"
 reset_path = File.join $SETTINGS['path'], $SETTINGS['dirs']['storage']
 FileUtils.rm_rf reset_path if File.exists? reset_path
 
-describe ProjectsPlumber do
+
+describe ProjectPlumber do
   #this happens before every 'it'
   before do
     @plumber  = described_class.new $SETTINGS, PlumberProject
@@ -25,42 +26,53 @@ describe ProjectsPlumber do
     describe "#check_dir" do
 
       it "notices missing storage directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['storage']
         expect(@plumber.check_dir :storage).to be_falsey
       end
 
       it "notices missing working directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['working']
         expect( @plumber.check_dir :working ).to be_falsey
       end
 
       it "notices missing archive directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['archive']
         expect( @plumber.check_dir :archive ).to be_falsey
       end
 
       it "finds its template file" do
+        expect(File).to exist @plumber.dirs[:template]
         expect( @plumber.check_dir :template).to be_truthy
       end
     end
 
     describe "#create_dir" do
       it "refuses to create working directory without the storage directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['working']
         expect(@plumber.create_dir :working).to be_falsey
+        expect(File).not_to exist $SETTINGS['dirs']['working']
       end
 
       it "refuses to create archive directory without the storage directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['archive']
         expect(@plumber.create_dir :archive).to be_falsey
+        expect(File).not_to exist $SETTINGS['dirs']['archive']
       end
     end
 
     describe "#_new_project_folder" do
       it "refuses to create a new project_folder" do
+        expect(File).not_to exist $SETTINGS['dirs']['working']
         expect(@plumber._new_project_folder("new_project_folder")).to be_falsey
       end
     end
 
     describe "#create_dir" do
       it "creates the storage directory" do
+        expect(File).not_to exist $SETTINGS['dirs']['storage']
         @plumber.create_dir :storage
         expect(File).to exist @plumber.dirs[:storage]
+        expect(File).to exist $SETTINGS['dirs']['storage']
       end
 
       it "creates the working directory" do
@@ -69,6 +81,7 @@ describe ProjectsPlumber do
       end
 
       it "creates the archive directory" do
+        expect(File).not_to exist @plumber.dirs[:archive]
         @plumber.create_dir :archive
         expect(File).to exist @plumber.dirs[:archive]
       end
@@ -88,6 +101,7 @@ describe ProjectsPlumber do
     describe described_class, "#check_dir" do
       it "checks existing storage directory" do
         expect(@plumber.check_dir (:storage )).to be_truthy
+        expect(File).to exist @plumber.dirs[:storage]
       end
 
       it "checks existing working directory" do
@@ -204,12 +218,12 @@ describe ProjectsPlumber do
         expect(@plumber.archive_project(name, 2010)).to be_truthy
       end
 
-      # TODO uncertain about behaviour: repeating name, is prefix part of name?
-      it "moves project to archive, with special year and prefix" do
-        name = "project_from_2010"
-        project = @plumber.new_project name
-        expect(@plumber.archive_project(name, 2010, "R025")).to be_truthy
-      end
+      ## TODO uncertain about behaviour: repeating name, is prefix part of name?
+      #it "moves project to archive, with special year and prefix" do
+      #  name = "project_from_2010"
+      #  project = @plumber.new_project name
+      #  expect(@plumber.archive_project(name, 2010, "R025")).to be_truthy
+      #end
     end
 
     describe described_class, "#unarchive_project" do

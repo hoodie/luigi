@@ -1,15 +1,15 @@
 # encoding: utf-8
 require 'fileutils'
+require 'logger'
 
 libpath = File.dirname __FILE__
 require File.join libpath, "ProjectPlumber/gitplumber"
 require File.join libpath, "ProjectPlumber/ShellSanitizer"
-require File.join libpath, "ProjectPlumber/shell"
 
 
 ## requires a project_class
 # project_class must implement: name, date
-class ProjectsPlumber
+class ProjectPlumber
 
   attr_reader :dirs,
     :opened_projects,
@@ -20,30 +20,28 @@ class ProjectsPlumber
 
   attr_writer :project_class
 
-  include ProjectPlumber::GitPlumber
-  include ProjectPlumber::Shell
+  include Luigi::GitPlumber
 
 
-  def initialize(settings = SETTINGS, project_class = nil)
+  def initialize(settings, project_class = nil)
     @settings        = settings
     @opened_projects = []
     @project_class   = project_class
     @file_extension  = settings['project_file_extension']
     @using_git       = settings['use_git']
 
-    error "need a project_class" if project_class.nil?
+    @logger = Logger.new(STDERR)
+    @logger.level = Logger::ERROR
+    @logger.error "need a project_class" if project_class.nil?
 
     @dirs            = {}
+    # TODO allow for multiple templates
     @dirs[:template] = File.expand_path File.join @settings['script_path'], @settings['templates']['project']
     @dirs[:storage]  = File.expand_path File.join @settings['path'], @settings['dirs']['storage']
     @dirs[:working]  = File.join @dirs[:storage], @settings['dirs']['working']
     @dirs[:archive]  = File.join @dirs[:storage], @settings['dirs']['archive']
-  end
 
-  ##
-  # *wrapper* for puts()
-  # depends on @settings.silent = true|false
-  def logs string
+
   end
 
   ##
@@ -70,20 +68,20 @@ class ProjectsPlumber
     unless check_dir(dir)
       if dir == :storage or check_dir :storage
         FileUtils.mkdir "#{@dirs[dir]}"
-        logs "Created \"#{dir.to_s}\" Directory (#{@dirs[dir]})"
+        @logger.info "Created \"#{dir.to_s}\" Directory (#{@dirs[dir]})"
         return true
       end
-      logs "no storage dir"
+      @logger.error "no storage dir"
     end
-    false
+    return false
   end
  
   ##
   # creates new project_dir and project_file
   def _new_project_folder(name)
     unless check_dir(:working)
-      logs(File.exists? @dirs[:working])
-      logs "missing working directory!"
+      @logger.info(File.exists? @dirs[:working])
+      @logger.info "missing working directory!"
       return false
     end
 
@@ -93,7 +91,7 @@ class ProjectsPlumber
       FileUtils.mkdir File.join @dirs[:working], name
       return get_project_folder(name, :working)
     else
-      logs "#{folder} already exists"
+      @logger.info "#{folder} already exists"
       return false
     end
   end
@@ -128,7 +126,7 @@ class ProjectsPlumber
       end
       file.close
 
-      logs "#{folder} created"
+      @logger.info "#{folder} created"
       return @project_class.new target
     else
       return false
@@ -191,7 +189,7 @@ class ProjectsPlumber
   def lookup_path(name, sort = nil)
     p = lookup(name)
     return @project_paths[p.name] unless p.nil?
-    error "there is no project #{name}"
+    @logger.error "there is no project #{name}"
     return false
   end
   
@@ -203,10 +201,10 @@ class ProjectsPlumber
       name_map = {}
       @opened_projects.each {|project| name_map[project.name] = project}
       project = name_map[name]
-      error "there is no project \"#{name}\"" if project.nil?
+      @logger.error "there is no project \"#{name}\"" if project.nil?
     elsif name.class == Fixnum
       project =  @opened_projects[name]
-      error "there is no project ##{name+1}" if project.nil?
+      @logger.error "there is no project ##{name+1}" if project.nil?
     end
     return project
   end
@@ -237,7 +235,7 @@ class ProjectsPlumber
       warn "no #{@file_extension} files in #{folder}" if files.length < 1
       return files[0]
     end
-    logs "NO FOLDER get_project_folder(name = #{name}, dir = #{dir}, year = #{year})"
+    @logger.info "NO FOLDER get_project_folder(name = #{name}, dir = #{dir}, year = #{year})"
     return false
   end
 
@@ -274,7 +272,7 @@ class ProjectsPlumber
       }
       return names
     else
-      error "unknown path #{dir}"
+      @logger.error "unknown path #{dir}"
     end
   end
 
@@ -291,7 +289,7 @@ class ProjectsPlumber
       folders = Dir.glob File.join @dirs[dir], year.to_s, "/*"
       paths = folders.map {|path| get_project_file_path (File.basename path), :archive, year }
     else
-      error "unknown path #{dir}"
+      @logger.error "unknown path #{dir}"
     end
 
     puts "WARNING! one folder is not correct" if paths.include? false
@@ -339,7 +337,7 @@ class ProjectsPlumber
   ##
   #  Move to archive directory
   #  @name 
-  ## ProjectsPlumber.archive_project should use ShellSanitizer
+  ## ProjectPlumber.archive_project should use ShellSanitizer
   def archive_project(project, year = nil, prefix = '')
     project = open_project project
     return false unless project.class == @project_class
@@ -359,7 +357,7 @@ class ProjectsPlumber
     return false unless project_folder
     return false if list_project_names(:archive, year).include? project.name
 
-    logs "moving: #{project_folder} to #{target}" if target and project_folder
+    @logger.info "moving: #{project_folder} to #{target}" if target and project_folder
 
     FileUtils.mv project_folder, target
     if open_git()
@@ -381,7 +379,7 @@ class ProjectsPlumber
     source       = get_project_folder name, :archive, year
     target       = File.join @dirs[:working], cleaned_name
 
-    logs "moving #{source} to #{target}"
+    @logger.info "moving #{source} to #{target}"
     return false unless source
 
     unless get_project_folder cleaned_name

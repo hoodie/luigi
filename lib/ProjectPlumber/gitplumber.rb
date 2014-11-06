@@ -15,7 +15,7 @@
 require 'git'
 require 'logger'
 
-module ProjectPlumber
+module Luigi
 module GitPlumber
 
   def open_git

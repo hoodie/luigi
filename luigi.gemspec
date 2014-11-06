@@ -12,8 +12,11 @@ Gem::Specification.new do |s|
   s.description = ""
   s.required_ruby_version     = '>= 1.9'
   s.files = Dir.glob('lib/*') + Dir.glob('lib/*/*')
-  s.extra_rdoc_files = ["README.md", "LICENSE.md"]
+  #s.extra_rdoc_files = ["README.md", "LICENSE.md"]
   s.license = 'GPL'
+  s.add_development_dependency 'rspec'
+  s.add_development_dependency 'rspec-core'
+  s.add_development_dependency 'rake'
   s.add_runtime_dependency 'git', "~> 1.2" , ">= 1.2.8"
   s.add_runtime_dependency 'textboxes', "~> 0.0.1"
 end

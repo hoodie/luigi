@@ -31,6 +31,7 @@ class Luigi
     @logger = Logger.new(STDERR)
     @logger.level = Logger::ERROR
     @logger.error "need a project_class" if project_class.nil?
+    @logger.progname = "LUIGI"
 
     @dirs            = {}
     # TODO allow for multiple templates

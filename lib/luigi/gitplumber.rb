@@ -20,11 +20,12 @@ module GitPlumber
 
   def open_git
     return false unless @using_git
+    logger = Logger.new STDOUT
     begin
       @git = Git.open @dirs[:storage]
       return true
     rescue => error
-      error "#{@dirs[:storage]} does not seem to be a git repository"
+      logger.error "#{@dirs[:storage]} does not seem to be a git repository"
       return false
     end
   end

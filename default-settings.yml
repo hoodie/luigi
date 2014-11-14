@@ -1,19 +1,21 @@
 ---
 path: "~"
 output_path: "."
+
 dirs:
-  storage: caterings
+  storage: luigi_projects # where working and archive are placed
   working: working
   archive: archive
 
-templates:
-  project:  templates/blank.yml.erb
-  #document: templates/document.tex.erb
+  templates: luigi_projects/templates
+
+
+#templates: # TODO settings/templates is deprecated, instead autodiscover settings/dirs/templates
+#  project:  templates/blank.yml.erb
 
 ## CAREFUL HERE
 project_file_extension: .yml
 use_git: false
-use_erb: false
 
 defaults:
   messages:

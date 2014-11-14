@@ -1,0 +1,33 @@
+created: <%= Date.today.strftime "%d.%m.%Y" %>
+
+client: 
+  title:     Herr # Frau, Professor, Professorin
+  first_name: John
+  last_name:  Doe
+
+  email: jon.doe@example.com
+
+event: 
+  name: "<%= data[:project_name] %>"
+  location: # might be a list
+  dates:
+  - begin: <%= (Date.today+ 15).strftime "%d.%m.%Y" %> # bezieht sich auf die veranstaltung selbst
+    #end: 
+    #times:
+    #-  begin: "9:00"
+    #   end:   "11:20"
+
+  description: |
+
+offer:
+  date: <%= Date.today.strftime "%d.%m.%Y" %>
+  appendix: 1
+
+invoice:
+  number: #27
+  date: #leave empty for auto date
+  payed_date:
+
+
+    
+manager: <%= settings['manager_name'] %>

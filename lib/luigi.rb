@@ -14,12 +14,12 @@ class Luigi
     :project_paths,
     :opened_paths,
     :opened_sort,
-    :opened_dir
+    :opened_dir,
+    :templates
 
   attr_writer :project_class
 
   include GitPlumber
-
 
   def initialize(settings, project_class = nil)
     @settings        = settings
@@ -34,19 +34,20 @@ class Luigi
     @logger.progname = "LUIGI"
 
     @dirs            = {}
-    # TODO allow for multiple templates
-    @dirs[:template] = File.expand_path File.join @settings['script_path'], @settings['templates']['project']
+
     @dirs[:storage]  = File.expand_path File.join @settings['path'], @settings['dirs']['storage']
     @dirs[:working]  = File.join @dirs[:storage], @settings['dirs']['working']
     @dirs[:archive]  = File.join @dirs[:storage], @settings['dirs']['archive']
 
+    # TODO allow for multiple templates
+    @dirs[:templates] = File.expand_path File.join @settings['path'], @settings['dirs']['templates']
 
   end
 
   ##
   # Checks the existens of one of the three basic dirs.
   # dir can be either :storage, :working or :archive
-  # and also :template
+  # and also :templates
   def check_dir(dir)
     File.exists? "#{@dirs[dir]}"
   end
@@ -57,7 +58,18 @@ class Luigi
     check_dir :storage and
     check_dir :working and
     check_dir :archive and
-    check_dir :template
+    check_dir :templates
+  end
+
+  def load_templates
+    return false unless check_dir :templates
+    files = Dir.glob File.join @dirs[:templates] , ?*
+    @templates =  {}
+    files.each{|file|
+      name = File.basename file.split(?.)[0]
+      @templates[name.to_sym] = file
+    }
+    return true
   end
 
   ##
@@ -98,38 +110,31 @@ class Luigi
   ##
   # creates new project_dir and project_file
   # returns project object
-  def new_project(_name)
+  def new_project(_name, template = :default, data = {})
     _name = ShellSanitizer.process _name
     name = ShellSanitizer.clean_path _name
 
-    project_name   = _name
-    settings       = @settings
-    defaults       = @settings['defaults']
-    defaults       = {}
+    load_templates()
 
-    filename = @dirs[:template]
+    template = @templates[template]
 
-    ## Approach A ( Thomas Kühn )
-    engine=ERB.new(File.read(filename),nil,'<>')
-    result = engine.result(binding)
-
-    # copy template_file to project_dir
+    # create project folder
     folder = _new_project_folder(name)
+
     if folder
       target = File.join folder, name+@file_extension
+      # project will load template and 
+      project = @project_class.new({
+        :path=>target,
+        :settings=>@settings,
+        :template_path=>template,
+        :data=>data }
+                                  )
 
-      #puts "writing into #{target}"
-      file = File.new target, "w"
-      result.lines.each do |line|
-        file.write line
-      end
-      file.close
-
-      @logger.info "#{folder} created"
-      return @project_class.new target
     else
       return false
     end
+
   end
 
 

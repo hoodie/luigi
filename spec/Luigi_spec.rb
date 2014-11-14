@@ -1,12 +1,11 @@
 require 'pp'
-require 'ostruct'
+require 'ostruct' # TODO
 require 'fileutils'
 require 'yaml'
 require File.dirname(__FILE__) + '/spec_helper'
 
 $SETTINGS = YAML::load(File.open(File.join File.dirname(__FILE__), "../default-settings.yml"))
-$SETTINGS['script_path'] = $SETTINGS['path'] = "."
-$SETTINGS['dirs']['storage'] = "rspec_projects"
+$SETTINGS['path'] = "."
 
 reset_path = File.join $SETTINGS['path'], $SETTINGS['dirs']['storage']
 FileUtils.rm_rf reset_path if File.exists? reset_path
@@ -15,10 +14,13 @@ FileUtils.rm_rf reset_path if File.exists? reset_path
 describe Luigi do
   #this happens before every 'it'
   before do
-    @plumber  = described_class.new $SETTINGS, PlumberProject
-    @plumber1 = described_class.new $SETTINGS, PlumberProject
-    @plumber2 = described_class.new $SETTINGS, PlumberProject
-    @plumber3 = described_class.new $SETTINGS, PlumberProject
+    @spec_template = File.join FileUtils.pwd, './templates/default.yml.erb'
+
+    @plumber  = described_class.new $SETTINGS, LuigiProject
+    @plumber1 = described_class.new $SETTINGS, LuigiProject
+    @plumber2 = described_class.new $SETTINGS, LuigiProject
+    @plumber3 = described_class.new $SETTINGS, LuigiProject
+
   end
 
   context "with no directories" do
@@ -40,10 +42,12 @@ describe Luigi do
         expect( @plumber.check_dir :archive ).to be_falsey
       end
 
-      it "finds its template file" do
-        expect(File).to exist @plumber.dirs[:template]
-        expect( @plumber.check_dir :template).to be_truthy
+      it "notices missing templates directory" do
+        expect(File).not_to exist @plumber.dirs[:templates]
+        expect( @plumber.check_dir :templates).to be_falsey
       end
+
+
     end
 
     describe "#create_dir" do
@@ -113,6 +117,32 @@ describe Luigi do
       end
     end
 
+    describe described_class, "#load_templates" do
+      it "finds its template dir" do
+        $SETTINGS['dirs']['templates']
+
+        expect(File).to exist(@spec_template)
+        expect(File).to exist(@plumber.dirs[:storage])
+
+
+        # preparing test env on the fly
+        expect(File).not_to exist(@plumber.dirs[:templates])
+        FileUtils.mkdir @plumber.dirs[:templates]
+        FileUtils.cp @spec_template, @plumber.dirs[:templates]
+
+        expect(File).to exist(@plumber.dirs[:templates])
+
+        expect(File).to exist @plumber.dirs[:templates]
+        expect( @plumber.check_dir :templates).to be_truthy
+      end
+
+      it "finds its template files" do
+        expect(@plumber.load_templates).to be_truthy
+        expect(@plumber.templates). to eq({default:(@plumber.dirs[:templates]+'/default.yml.erb')})
+      end
+    end
+
+
     describe described_class, "#_new_project_folder()" do
       it "creates a new project folder" do
         path = @plumber._new_project_folder "new_project0"
@@ -167,7 +197,7 @@ describe Luigi do
       #it "returns path to archived project folder" do
       #  name = "archived project for get_project_folder"
       #  path = @plumber.new_project name
-      #  project = PlumberProject.new path
+      #  project = LuigiProject.new path
       #  expect(@plumber.archive_project(project)).to be_truthy
       #  expect(File).to exist @plumber.get_project_folder(name,:archive)
       #end
@@ -264,6 +294,10 @@ describe Luigi do
       end
 
     end
+
+    it "looks up projects by name" # TODO also test look in archive
+    it "looks up projects by index"
+    it "looks up projects by unique beginning of name"
 
   end
 

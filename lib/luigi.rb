@@ -17,7 +17,7 @@ class Luigi
     :opened_dir,
     :templates
 
-  attr_writer :project_class
+  #attr_writer :project_class
 
   include GitPlumber
 
@@ -155,7 +155,7 @@ class Luigi
     @opened_dir      = dir
     @project_paths   = {}
     @opened_paths.each {|path|
-      project = @project_class.new path
+      project = @project_class.new :path=>path
       if project.STATUS == :ok
         @opened_projects = @opened_projects + [ project ]
       end

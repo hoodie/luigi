@@ -1,7 +1,9 @@
 require 'pp'
-require 'ostruct' # TODO
 require 'fileutils'
 require 'yaml'
+
+require 'paint'
+
 require File.dirname(__FILE__) + '/spec_helper'
 
 $SETTINGS = YAML::load(File.open(File.join File.dirname(__FILE__), "../default-settings.yml"))
@@ -12,91 +14,30 @@ FileUtils.rm_rf reset_path if File.exists? reset_path
 
 
 describe Luigi do
-  #this happens before every 'it'
-  before do
-    @spec_template = File.join FileUtils.pwd, './templates/default.yml.erb'
+
+  before :all do
+    #puts File.expand_path File.join FileUtils.pwd, './templates/default.yml.erb'
+  end
+
+  after :each do
+    puts Paint["working created", :red] if Dir.glob(?*).include? "working"
+    FileUtils.rm_rf @plumber.dirs[:storage]
+  end
+
+  before :each do
+    @spec_template = File.expand_path File.join FileUtils.pwd, './templates/default.yml.erb'
 
     @plumber  = described_class.new $SETTINGS, LuigiProject
+    @plumber.create_dir :storage
+    @plumber.create_dir :working
+    @plumber.create_dir :archive
+    @plumber.create_dir :templates
+
+    FileUtils.cp @spec_template, @plumber.dirs[:templates]
+
     @plumber1 = described_class.new $SETTINGS, LuigiProject
     @plumber2 = described_class.new $SETTINGS, LuigiProject
     @plumber3 = described_class.new $SETTINGS, LuigiProject
-
-  end
-
-  context "with no directories" do
-
-    describe "#check_dir" do
-
-      it "notices missing storage directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['storage']
-        expect(@plumber.check_dir :storage).to be_falsey
-      end
-
-      it "notices missing working directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['working']
-        expect( @plumber.check_dir :working ).to be_falsey
-      end
-
-      it "notices missing archive directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['archive']
-        expect( @plumber.check_dir :archive ).to be_falsey
-      end
-
-      it "notices missing templates directory" do
-        expect(File).not_to exist @plumber.dirs[:templates]
-        expect( @plumber.check_dir :templates).to be_falsey
-      end
-
-
-    end
-
-    describe "#create_dir" do
-      it "refuses to create working directory without the storage directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['working']
-        expect(@plumber.create_dir :working).to be_falsey
-        expect(File).not_to exist $SETTINGS['dirs']['working']
-      end
-
-      it "refuses to create archive directory without the storage directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['archive']
-        expect(@plumber.create_dir :archive).to be_falsey
-        expect(File).not_to exist $SETTINGS['dirs']['archive']
-      end
-    end
-
-    describe "#_new_project_folder" do
-      it "refuses to create a new project_folder" do
-        expect(File).not_to exist $SETTINGS['dirs']['working']
-        expect(@plumber._new_project_folder("new_project_folder")).to be_falsey
-      end
-    end
-
-    describe "#create_dir" do
-      it "creates the storage directory" do
-        expect(File).not_to exist $SETTINGS['dirs']['storage']
-        @plumber.create_dir :storage
-        expect(File).to exist @plumber.dirs[:storage]
-        expect(File).to exist $SETTINGS['dirs']['storage']
-      end
-
-      it "creates the working directory" do
-        @plumber.create_dir :working
-        expect(File).to exist @plumber.dirs[:working]
-      end
-
-      it "creates the archive directory" do
-        expect(File).not_to exist @plumber.dirs[:archive]
-        @plumber.create_dir :archive
-        expect(File).to exist @plumber.dirs[:archive]
-      end
-    end
-
-    #describe "#list_projects" do
-    #  it "refuses to list projects if file does not exist" do
-    #    @plumber.list_projects).to be_falsey
-    #  end
-    #end
-
   end
 
 
@@ -104,7 +45,7 @@ describe Luigi do
 
     describe described_class, "#check_dir" do
       it "checks existing storage directory" do
-        expect(@plumber.check_dir (:storage )).to be_truthy
+        expect(@plumber.check_dir (:storage) ).to be_truthy
         expect(File).to exist @plumber.dirs[:storage]
       end
 
@@ -115,19 +56,33 @@ describe Luigi do
       it "checks existing archive directory" do
         expect( @plumber.check_dir :archive ).to be_truthy
       end
+
+      it "checks existing templates directory" do
+        expect( @plumber.check_dir :templates ).to be_truthy
+      end
     end
 
     describe described_class, "#load_templates" do
       it "finds its template dir" do
         $SETTINGS['dirs']['templates']
 
+        FileUtils.rm_r(@plumber.dirs[:templates])
+
         expect(File).to exist(@spec_template)
         expect(File).to exist(@plumber.dirs[:storage])
 
 
         # preparing test env on the fly
+        # creating manually
         expect(File).not_to exist(@plumber.dirs[:templates])
         FileUtils.mkdir @plumber.dirs[:templates]
+        expect(File).to exist(@plumber.dirs[:templates])
+
+        # creating with create_dir
+        FileUtils.rm_r(@plumber.dirs[:templates])
+        @plumber.create_dir :templates
+        expect(File).to exist(@plumber.dirs[:templates])
+
         FileUtils.cp @spec_template, @plumber.dirs[:templates]
 
         expect(File).to exist(@plumber.dirs[:templates])
@@ -137,6 +92,7 @@ describe Luigi do
       end
 
       it "finds its template files" do
+        expect(File).to exist @spec_template
         expect(@plumber.load_templates).to be_truthy
         expect(@plumber.templates). to eq({default:(@plumber.dirs[:templates]+'/default.yml.erb')})
       end
@@ -150,28 +106,35 @@ describe Luigi do
       end
 
       it "refuses to create a project folder with existing name" do
-        expect(@plumber._new_project_folder("new_project0")).to be_falsey
+        expect(@plumber._new_project_folder("duplicate")).to be_truthy
+        expect(@plumber._new_project_folder("duplicate")).to be_falsey
       end
 
-      it "deletes empty project path" do
-        FileUtils.rmdir @plumber.get_project_folder "new_project0"
-      end
+      it "deletes empty project path"
     end
 
     describe described_class, "#new_project" do
       it "sanitizes names prior to creating new projects with forbidden characters" do
-        subfolder     = @plumber.new_project("sub/folder")
-        hiddenproject = @plumber1.new_project(".hidden_project")
+        subfolder       = @plumber.new_project("sub/folder")
+        hiddenproject   = @plumber1.new_project(".hidden_project")
         canceledproject = @plumber2.new_project("canceled catering")
-        expect(subfolder).to be_truthy
+
+        expect(subfolder    ).to be_truthy
         expect(hiddenproject).to be_truthy
-        expect(@plumber.get_project_folder("sub_folder")).to be_truthy
+
+        expect( @plumber.get_project_folder("sub_folder")).to be_truthy
+        expect(File).to exist  File.join(@plumber.dirs[:working], "sub_folder" )
+
         expect(@plumber1.get_project_folder("hidden_project")).to be_truthy
+        expect(File).to exist  File.join(@plumber.dirs[:working], "hidden_project" )
+
         expect(@plumber2.get_project_folder("canceled catering")).to be_truthy
+        expect(File).to exist  File.join(@plumber.dirs[:working], "canceled catering" )
       end
 
       it "creates a new project" do
         expect(@plumber.new_project("new_project1")).to be_truthy
+        expect(@plumber.new_project("new_project1")).to be_falsey
         expect(@plumber.new_project("new_project2")).to be_truthy
       end
 
@@ -191,16 +154,21 @@ describe Luigi do
       end
 
       it "returns path to project folder" do
+        expect(@plumber.new_project("new_project1")).to be_truthy
+        expect(@plumber.get_project_folder("new_project1")).to be_truthy
         expect(File).to exist @plumber.get_project_folder("new_project1")
       end
 
-      #it "returns path to archived project folder" do
-      #  name = "archived project for get_project_folder"
-      #  path = @plumber.new_project name
-      #  project = LuigiProject.new path
-      #  expect(@plumber.archive_project(project)).to be_truthy
-      #  expect(File).to exist @plumber.get_project_folder(name,:archive)
-      #end
+      it "returns path to archived project folder" do
+        name = "archived project for get_project_folder"
+        path = @plumber.new_project name
+        project = LuigiProject.new :path => path
+        expect(@plumber.get_project_folder(name)).to be_truthy
+        expect(File).to exist @plumber.get_project_folder(name)
+
+        expect(@plumber.archive_project(name)).to be_truthy
+        expect(File).to exist @plumber.get_project_folder(name,:archive)
+      end
 
     end
 
@@ -211,10 +179,15 @@ describe Luigi do
       end
 
       it "returns path to project folder" do
+        expect(@plumber.new_project("new_project1")).to be_truthy
+        expect(@plumber.get_project_folder("new_project1")).to be_truthy
+        expect(File).to exist @plumber.get_project_folder("new_project1")
+
         expect(File).to exist @plumber.get_project_file_path("new_project1")
       end
 
-      #it "finds files in the archive" do
+      it "finds files in the archive"
+      #do
       #  name = "archived project"
       #  @plumber.new_project name
       #  @plumber.archive_project name
@@ -225,7 +198,8 @@ describe Luigi do
     end
 
     describe described_class, "#list_projects" do
-    #  it "lists projects" do
+      it "lists projects"
+    #  do
     #    @plumber.list_projects).to be_falsey
     #  end
     end
@@ -295,9 +269,13 @@ describe Luigi do
 
     end
 
-    it "looks up projects by name" # TODO also test look in archive
-    it "looks up projects by index"
-    it "looks up projects by unique beginning of name"
+    #describe described_class, "#lookup" do
+
+      it "looks up projects by name" # TODO also test look in archive
+      it "looks up projects by index"
+      it "looks up projects by unique beginning of name"
+
+    #end
 
   end
 

@@ -14,16 +14,17 @@ describe LuigiProject do
 
     @settings = YAML::load(File.open(File.join File.dirname(__FILE__), "../default-settings.yml"))
 
-    @project_path = File.join(@settings['dirs']['working'], "project_spec/")
-    @project_file = File.join(@settings['dirs']['working'], "project_spec/project_spec.yml")
-    @project_file2 = File.join(@settings['dirs']['working'], "project_spec/project_spec2.yml")
+    @plumber  = Luigi.new @settings, LuigiProject
+    @project_path  = File.join(@plumber.dirs[:working], "project_spec/")
+    @project_file  = File.join(@plumber.dirs[:working], "project_spec/project_spec.yml")
+    @project_file2 = File.join(@plumber.dirs[:working], "project_spec/project_spec2.yml")
 
     FileUtils.mkdir_p @project_path
   end
 
   after :each do
-    FileUtils.rm @project_file if File.exists? @project_file
-    FileUtils.rm @project_file2 if File.exists? @project_file2
+    #FileUtils.rm @project_file  if File.exists? @project_file
+    #FileUtils.rm @project_file2 if File.exists? @project_file2
   end
 
   after do
@@ -51,7 +52,7 @@ describe LuigiProject do
 
   it "raises on non existing templates" do
     expect { project = described_class.new(
-      {:path => File.join(@settings['dirs']['working'], "project_spec/project_spec.yml"),
+      {:path => File.join(@plumber.dirs[:working], "project_spec/project_spec.yml"),
        :settings => @settings, :template_path => "templates/not_there.yml.erb"}) }.to raise_error
   end
 
@@ -61,12 +62,12 @@ describe LuigiProject do
   end
 
   it "raises on invalid template file formats" do
-    expect { project = described_class.new( {:path => File.join(@settings['dirs']['working'], "project_spec/project_spec.yml"),
+    expect { project = described_class.new( {:path => File.join(@plumber.dirs[:working], "project_spec/project_spec.yml"),
        :settings => @settings, :template_path => "templates/default.xml.erb"}) }.to raise_error
   end
 
   it "raises on invalid project file formats" do
-    expect { project = described_class.new( {:path => File.join(@settings['dirs']['working'], "project_spec/project_spec.xml"),
+    expect { project = described_class.new( {:path => File.join(@plumber.dirs[:working], "project_spec/project_spec.xml"),
        :settings => @settings, :template_path => "templates/default.yml.erb"}) }.to raise_error
   end
 

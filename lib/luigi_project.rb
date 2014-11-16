@@ -28,8 +28,7 @@ class LuigiProject # TO BE LuigiProject
 
   # attempting to fill erb if template ends in .erb
   # filling with @settings[:defaults]
-  def create template_path
-
+  def create(template_path)
     @using_erb = File.extname(@template_path) == ".erb"
 
     template_basename = File.basename @template_path
@@ -40,24 +39,25 @@ class LuigiProject # TO BE LuigiProject
     raise "Template does not exist!" unless File.exists? @template_path
     raise "Project file already exists! (#{@path})" if File.exists? @path
 
-
     if @using_erb
-      data = @data
-      settings = @settings
-      engine=ERB.new(File.read(@template_path),nil,'<>')
-      result = engine.result(binding)
-
-
-        #puts "writing into #{@path}"
-        file = File.new @path, "w"
-        result.lines.each do |line|
-          file.write line
-        end
-        file.close
-
+      create_with_erb(template_path)
     else
       FileUtils.cp @template_path, @path
     end
+  end
+
+  def create_with_erb template_path
+    data = @data
+    settings = @settings
+    engine=ERB.new(File.read(template_path),nil,'<>')
+    result = engine.result(binding)
+
+    #puts "writing into #{@path}"
+    file = File.new @path, "w"
+    result.lines.each do |line|
+      file.write line
+    end
+    file.close
   end
 
   # opens project form path

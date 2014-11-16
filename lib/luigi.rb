@@ -2,19 +2,20 @@
 require 'fileutils'
 require 'logger'
 
+require File.join File.dirname(__FILE__), "luigi_internal"
 require File.join File.dirname(__FILE__), "luigi/gitplumber"
 require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"
 
 ## requires a project_class
 # project_class must implement: name, date
-class Luigi
+# TODO
+class Luigi < LuigiInternal
 
   attr_reader :dirs,
     :opened_projects,
     :project_paths,
     :opened_paths,
     :opened_sort,
-    :opened_dir,
     :templates
 
   #attr_writer :project_class
@@ -28,48 +29,8 @@ class Luigi
     @file_extension  = settings['project_file_extension']
     @using_git       = settings['use_git']
 
-    @logger = Logger.new(STDERR)
-    @logger.level = Logger::ERROR
-    @logger.error "need a project_class" if project_class.nil?
-    @logger.progname = "LUIGI"
-
-    @dirs            = {}
-
-    @dirs[:storage]  = File.expand_path File.join @settings['path'], @settings['dirs']['storage']
-    @dirs[:working]  = File.join @dirs[:storage], @settings['dirs']['working']
-    @dirs[:archive]  = File.join @dirs[:storage], @settings['dirs']['archive']
-
-    # TODO allow for multiple templates
-    @dirs[:templates] = File.expand_path File.join @settings['path'], @settings['dirs']['templates']
-
-  end
-
-  ##
-  # Checks the existens of one of the three basic dirs.
-  # dir can be either :storage, :working or :archive
-  # and also :templates
-  def check_dir(dir)
-    File.exists? "#{@dirs[dir]}"
-  end
-
-  ##
-  # Checks the existens of every thing required
-  def check_dirs
-    check_dir :storage and
-    check_dir :working and
-    check_dir :archive and
-    check_dir :templates
-  end
-
-  def load_templates
-    return false unless check_dir :templates
-    files = Dir.glob File.join @dirs[:templates] , ?*
-    @templates =  {}
-    files.each{|file|
-      name = File.basename file.split(?.)[0]
-      @templates[name.to_sym] = file
-    }
-    return true
+    init_logger()
+    init_dirs()
   end
 
   ##
@@ -87,25 +48,6 @@ class Luigi
     return false
   end
  
-  ##
-  # creates new project_dir and project_file
-  def _new_project_folder(name)
-    unless check_dir(:working)
-      @logger.info(File.exists? @dirs[:working])
-      @logger.info "missing working directory!"
-      return false
-    end
-
-    #  check of existing project with the same name
-    folder = get_project_folder(name, :working)
-    unless folder
-      FileUtils.mkdir File.join @dirs[:working], name
-      return get_project_folder(name, :working)
-    else
-      @logger.info "#{folder} already exists"
-      return false
-    end
-  end
 
   ##
   # creates new project_dir and project_file
@@ -152,7 +94,6 @@ class Luigi
       @opened_paths    = list_projects dir, year 
     end
 
-    @opened_dir      = dir
     @project_paths   = {}
     @opened_paths.each {|path|
       project = @project_class.new :path=>path
@@ -166,14 +107,12 @@ class Luigi
   end
 
   def open_project project
-    if project.class == String
-      project = ShellSanitizer.process    project
-      project = ShellSanitizer.clean_path project
-      open_projects()
-      project = lookup(project)
-    end
+    return false unless project.class == String
+    project = ShellSanitizer.process    project
+    project = ShellSanitizer.clean_path project
+    open_projects()
+    project = lookup(project)
     return project if project.class == @project_class
-    return false
   end
 
 
@@ -186,8 +125,8 @@ class Luigi
     open_projects :all, year=nil, sort
   end
 
-  def [] name
-    lookup name
+  def [] term
+    lookup term
   end
 
   def lookup_path(name, sort = nil)
@@ -223,25 +162,6 @@ class Luigi
       return true
   end
   
-  ##
-  # path to project file
-  # there may only be one @file_extension file per project folder
-  #
-  # untested
-  def get_project_file_path(name, dir=:working, year=Date.today.year)
-      name = ShellSanitizer.process    name
-      name = ShellSanitizer.clean_path name
-      
-    folder = get_project_folder(name, dir, year)
-    if folder
-      files = Dir.glob File.join folder, "*#{@file_extension}"
-      warn "ambiguous amount of #{@file_extension} files in #{folder}" if files.length > 1
-      warn "no #{@file_extension} files in #{folder}" if files.length < 1
-      return files[0]
-    end
-    @logger.info "NO FOLDER get_project_folder(name = #{name}, dir = #{dir}, year = #{year})"
-    return false
-  end
 
 
   ##
@@ -266,10 +186,10 @@ class Luigi
   def list_project_names(dir = :working, year=Date.today.year)
     return unless check_dir(dir)
     if dir == :working
-      paths = Dir.glob File.join @dirs[dir], "/*"
+      paths = Dir.glob File.join @dirs[:working], "/*"
       names = paths.map {|path| File.basename path }
     elsif dir == :archive
-      paths = Dir.glob File.join @dirs[dir], year.to_s, "/*"
+      paths = Dir.glob File.join @dirs[:archive], year.to_s, "/*"
       names = paths.map {|path|
         file_path = get_project_file_path (File.basename path), :archive, year
         name = File.basename file_path, @file_extension
@@ -281,48 +201,19 @@ class Luigi
   end
 
   ##
-  # list projects
   # lists project files
-  # (names actually contains paths)
   def list_projects(dir = :working, year=Date.today.year)
     return unless check_dir(dir)
     if dir == :working
-      folders = Dir.glob File.join @dirs[dir], "/*"
-      paths = folders.map {|path| get_project_file_path File.basename path }
+      return list_projects_working()
     elsif dir == :archive
-      folders = Dir.glob File.join @dirs[dir], year.to_s, "/*"
-      paths = folders.map {|path| get_project_file_path (File.basename path), :archive, year }
+      return list_projects_archive(year)
     else
       @logger.error "unknown path #{dir}"
+      return []
     end
-
-    puts "WARNING! one folder is not correct" if paths.include? false
-    paths.keep_if{|v| v}
   end
 
-  ##
-  # list projects
-  # lists project files
-  # (names actually contains paths)
-  def list_projects_all
-    names = []
-
-    #first all archived projects, ever :D
-    archives = Dir.glob File.join @dirs[:archive], "/*"
-    archives.sort!
-    archives.each do |a|
-      paths = Dir.glob File.join a, "/*"
-      year = File.basename a
-      names += paths.map { |path|
-        get_project_file_path (File.basename path), :archive, year
-      }
-    end
-
-    #then all working projects
-    names += list_projects :working
-
-    return names
-  end
 
   def filter_by hash
     filtered_projets = []
@@ -342,8 +233,8 @@ class Luigi
   #  Move to archive directory
   #  @name 
   ## Luigi.archive_project should use ShellSanitizer
-  def archive_project(project, year = nil, prefix = '')
-    project = open_project project
+  def archive_project(project_name, year = nil, prefix = '')
+    project = open_project project_name
     return false unless project.class == @project_class
     
     year ||= project.date.year
@@ -377,14 +268,13 @@ class Luigi
     project = open_project project
     return false unless project.class == @project_class
 
-    name         = project.name
     path         = project.path
     cleaned_name = File.basename(path,@file_extension)
-    source       = get_project_folder name, :archive, year
+    source       = get_project_folder project.name, :archive, year
     target       = File.join @dirs[:working], cleaned_name
+    return false unless source
 
     @logger.info "moving #{source} to #{target}"
-    return false unless source
 
     unless get_project_folder cleaned_name
       FileUtils.mv source, target

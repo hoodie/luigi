@@ -197,10 +197,10 @@ describe Luigi do
 
     end
 
-    describe described_class, "#list_projects" do
+    describe described_class, "#list_project_paths" do
       it "lists projects"
     #  do
-    #    @plumber.list_projects).to be_falsey
+    #    @plumber.list_project_paths).to be_falsey
     #  end
     end
 

@@ -76,14 +76,14 @@ class LuigiInternal
   end
 
   ##
-  # path to project file
+  # derives path to project file from name
   # there may only be one @file_extension file per project folder
   #
   # untested
   def get_project_file_path(name, dir=:working, year=Date.today.year)
-      name = ShellSanitizer.process    name
-      name = ShellSanitizer.clean_path name
-      
+    name = ShellSanitizer.process    name
+    name = ShellSanitizer.clean_path name
+
     folder = get_project_folder(name, dir, year)
     if folder
       files = Dir.glob File.join folder, "*#{@file_extension}"
@@ -95,44 +95,87 @@ class LuigiInternal
     return false
   end
 
+  # opens a project from path
+  def open_project_from_path path
+    project = @project_class.new({
+      :path          => path,
+      :settings      => @settings})
+    return project if project.class == @project_class
+    return false
+  end
+
+
+
+
   ##
-  # lists project files from working directory
-  def list_projects_working()
+  # maps project names to files from working dir
+  def map_project_files_working()
+    map = {}
     folders = Dir.glob File.join @dirs[:working], "/*"
     paths = folders.map {|path| get_project_file_path File.basename path }
-    puts "WARNING! one folder is not correct" if paths.include? false
-    paths.keep_if{|v| v}
+    paths.each {|path| map[File.basename path, @file_extension] = path }
+    return map
+  end
+
+  ##
+  # maps project names to files from working dir
+  def map_project_files_archive(year = Date.today.year)
+    map={}
+    paths = Dir.glob File.join @dirs[:archive], year.to_s, "/*"
+    names = paths.map {|path|
+      file_path = get_project_file_path (File.basename path), :archive, year
+      name = File.basename file_path, @file_extension
+      map[name] = file_path
+    }
+    return map
+  end
+
+  ##
+  # maps project names to files 
+  def map_project_files(dir = :working, year=Date.today.year)
+    return unless check_dir(dir)
+    if dir == :working
+      return map_project_files_working()
+    elsif dir == :archive
+      return map_project_files_archive year
+    else
+      @logger.error "unknown path #{dir}"
+    end
+  end
+
+  ##
+  # returns map of years to archive folders
+  def map_archive_years
+    map = {}
+    Dir.glob(File.join @dirs[:archive], "/*").each{|path|
+      map[File.basename path] = path
+    }
+    return map
+  end
+
+
+
+
+  ##
+  # lists project files from working directory
+  def list_project_files_working()
+    map_project_files_working.values
   end
 
   # lists project files from archive directory
-  def list_projects_archive(year)
-    folders = Dir.glob File.join @dirs[dir], year.to_s, "/*"
-    paths = folders.map {|path| get_project_file_path (File.basename path), :archive, year }
-    puts "WARNING! one folder is not correct" if paths.include? false
-    paths.keep_if{|v| v}
+  def list_project_files_archive(year = Date.today.year)
+    map_project_files_archive(year).values
   end
 
   ##
   # list projects
   # lists project files
-  # (names actually contains paths)
-  def list_projects_all
-    names = []
-
-    #first all archived projects, ever :D
-    archives = Dir.glob File.join @dirs[:archive], "/*"
-    archives.sort!
-    archives.each do |a|
-      paths = Dir.glob File.join a, "/*"
-      year = File.basename a
-      names += paths.map { |path|
-        get_project_file_path (File.basename path), :archive, year
-      }
-    end
-
-    #then all working projects
-    names += list_projects :working
-
-    return names
+  def list_project_files_all
+    working = list_project_files_working
+    archive = []
+    map_archive_years.keys.each{|year|
+      archive += list_project_files_archive(year)
+    }
+    return ( archive + working )
   end
 end

@@ -14,9 +14,9 @@ class Luigi < LuigiInternal
   attr_reader :dirs,
     :opened_projects,
     :project_paths,
-    :opened_paths,
     :opened_sort,
-    :templates
+    :templates,
+    :settings
 
   #attr_writer :project_class
 
@@ -27,6 +27,7 @@ class Luigi < LuigiInternal
     @opened_projects = []
     @project_class   = project_class
     @file_extension  = settings['project_file_extension']
+    @file_extension  ||= ".yml"
     @using_git       = settings['use_git']
 
     init_logger()
@@ -43,7 +44,7 @@ class Luigi < LuigiInternal
         @logger.info "Created \"#{dir.to_s}\" Directory (#{@dirs[dir]})"
         return true
       end
-      @logger.error "no storage dir"
+      @logger.error "No storage dir."
     end
     return false
   end
@@ -67,16 +68,15 @@ class Luigi < LuigiInternal
       target = File.join folder, name+@file_extension
       # project will load template and 
       project = @project_class.new({
-        :path=>target,
-        :settings=>@settings,
-        :template_path=>template,
-        :data=>data }
+        :path          => target,
+        :settings      => @settings,
+        :template_path => template,
+        :data          => data }
                                   )
 
     else
       return false
     end
-
   end
 
 
@@ -89,77 +89,63 @@ class Luigi < LuigiInternal
   # untested
   def open_projects(dir=:working, year=Date.today.year, sort = :date)
     if dir==:all
-      @opened_paths    = list_projects_all
+      opened_paths    = list_project_files_all
     else
-      @opened_paths    = list_projects dir, year 
+      opened_paths    = list_project_files dir, year 
     end
 
-    @project_paths   = {}
-    @opened_paths.each {|path|
-      project = @project_class.new :path=>path
+    projects = opened_paths.map {|path|
+      project = open_project_from_path path
       if project.STATUS == :ok
         @opened_projects = @opened_projects + [ project ]
       end
-      @project_paths[project.name] = path
+      project
     }
-    sort_projects(sort)
-    return true
-  end
-
-  def open_project project
-    return false unless project.class == String
-    project = ShellSanitizer.process    project
-    project = ShellSanitizer.clean_path project
-    open_projects()
-    project = lookup(project)
-    return project if project.class == @project_class
+    sort_projects(projects, sort)
+    return projects
   end
 
 
-  ##
-  # produces an Array of @project_class objects
-  #
-  # untested
-  def open_projects_all(sort = :date)
-    @opened_paths    = list_projects_all
-    open_projects :all, year=nil, sort
+  # opens a project from name
+  # TODO implement archive lookup
+  def open_project_from_name project_name
+    return false unless project_name.class == String
+    project_name = ShellSanitizer.process    project_name
+    project_name = ShellSanitizer.clean_path project_name
+    path = get_project_file_path project_name
+    return open_project_from_path path if path
+    @logger.error "Patherror: #{project_name}"
   end
 
-  def [] term
-    lookup term
-  end
 
-  def lookup_path(name, sort = nil)
-    p = lookup(name)
-    return @project_paths[p.name] unless p.nil?
-    @logger.error "there is no project #{name}"
-    return false
+  # returns opened project
+  def lookup_by_name(name, dir = :working, year = Date.today.year)
+    projects = map_project_files(dir, year)
+    matches = projects.keys.select{|k| k.downcase.include? name.downcase}
+    matches.each{|match|
+      open_project_from_path projects[match]
+    }
   end
   
-  
-  def lookup(name, sort = nil)
-    sort_projects sort unless sort == nil or @opened_sort == sort
-    name = name.to_i - 1 if name =~ /^\d*$/
-    if name.class == String
-      name_map = {}
-      @opened_projects.each {|project| name_map[project.name] = project}
-      project = name_map[name]
-      @logger.error "there is no project \"#{name}\"" if project.nil?
-    elsif name.class == Fixnum
-      project =  @opened_projects[name]
-      @logger.error "there is no project ##{name+1}" if project.nil?
-    end
+
+
+  def lookup_by_num(num, dir= :working, sort=:date, year= Date.today.year)
+    projects = sort_projects( open_projects(dir, year), sort )
+    num = num.to_i - 1
+    project =  projects[num]
+    @logger.error "there is no project ##{num+1}" if project.nil?
     return project
   end
   
   
-  def sort_projects(sort = :date)
-      fail "sort must be a Symbol" unless sort.class == Symbol
+  def sort_projects(projects, sort = :date)
+      raise "sort must be a Symbol" unless sort.class == Symbol
       if @project_class.method_defined? sort
-          @opened_projects.sort_by! {|project| project.method(sort).call}
-      else fail "#{@project_class} does not implement #{sort}()"
+          projects.sort_by! {|project| project.method(sort).call}
+          return projects
+      else raise "#{@project_class} does not implement #{sort}()"
       end
-      return true
+      return false
   end
   
 
@@ -186,15 +172,9 @@ class Luigi < LuigiInternal
   def list_project_names(dir = :working, year=Date.today.year)
     return unless check_dir(dir)
     if dir == :working
-      paths = Dir.glob File.join @dirs[:working], "/*"
-      names = paths.map {|path| File.basename path }
+      return map_project_files_working().keys()
     elsif dir == :archive
-      paths = Dir.glob File.join @dirs[:archive], year.to_s, "/*"
-      names = paths.map {|path|
-        file_path = get_project_file_path (File.basename path), :archive, year
-        name = File.basename file_path, @file_extension
-      }
-      return names
+      return map_project_files_archive(year).keys()
     else
       @logger.error "unknown path #{dir}"
     end
@@ -202,12 +182,12 @@ class Luigi < LuigiInternal
 
   ##
   # lists project files
-  def list_projects(dir = :working, year=Date.today.year)
+  def list_project_files(dir = :working, year=Date.today.year)
     return unless check_dir(dir)
     if dir == :working
-      return list_projects_working()
+      return list_project_files_working()
     elsif dir == :archive
-      return list_projects_archive(year)
+      return list_project_files_archive(year)
     else
       @logger.error "unknown path #{dir}"
       return []
@@ -215,9 +195,9 @@ class Luigi < LuigiInternal
   end
 
 
-  def filter_by hash
+  def filter_by projects, hash
     filtered_projets = []
-    @opened_projects.each{|project|
+    projects.each{|project|
       hash.each{|key,value|
         field = project.data(key)
         if field and field.to_s.downcase.include? value
@@ -233,8 +213,8 @@ class Luigi < LuigiInternal
   #  Move to archive directory
   #  @name 
   ## Luigi.archive_project should use ShellSanitizer
-  def archive_project(project_name, year = nil, prefix = '')
-    project = open_project project_name
+  def archive_project(project, year = nil, prefix = '')
+    project = open_project project
     return false unless project.class == @project_class
     
     year ||= project.date.year

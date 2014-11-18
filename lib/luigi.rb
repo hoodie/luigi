@@ -1,8 +1,10 @@
 # encoding: utf-8
 require 'fileutils'
 require 'logger'
+require 'hashr'
 
 require File.join File.dirname(__FILE__), "luigi_internal"
+require File.join File.dirname(__FILE__), "luigi_project"
 require File.join File.dirname(__FILE__), "luigi/gitplumber"
 require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"
 
@@ -12,7 +14,6 @@ require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"
 class Luigi < LuigiInternal
 
   attr_reader :dirs,
-    :opened_projects,
     :project_paths,
     :opened_sort,
     :templates,
@@ -23,8 +24,7 @@ class Luigi < LuigiInternal
   include GitPlumber
 
   def initialize(settings, project_class = nil)
-    @settings        = settings
-    @opened_projects = []
+    @settings        = Hashr.new settings
     @project_class   = project_class
     @file_extension  = settings['project_file_extension']
     @file_extension  ||= ".yml"
@@ -87,25 +87,86 @@ class Luigi < LuigiInternal
   # output of (foobar must be comparable)
   #
   # untested
-  def open_projects(dir=:working, year=Date.today.year, sort = :date)
+  def _open_projects(dir=:working, sort = :date, year=Date.today.year)
+    #TODO perhaps cache projects
     if dir==:all
       opened_paths    = list_project_files_all
     else
       opened_paths    = list_project_files dir, year 
     end
 
-    projects = opened_paths.map {|path|
-      project = open_project_from_path path
-      if project.STATUS == :ok
-        @opened_projects = @opened_projects + [ project ]
-      end
-      project
+    projects = []
+    opened_paths.each {|path|
+      project = open_project_from_path(path)
+      projects <<  project if project.STATUS == :ok
     }
-    sort_projects(projects, sort)
+    projects = sort_projects(projects, sort)
     return projects
   end
 
+  # sorts array of project_class
+  def sort_projects(projects, sort = :date)
+      raise "sort must be a Symbol, not a #{sort.class} (#{sort})" unless sort.class == Symbol
+      if @project_class.method_defined? sort
+          projects.sort_by! {|project| project.method(sort).call}
+          return projects
+      else raise "#{@project_class} does not implement #{sort}()"
+      end
+      return false
+  end
 
+
+  def open_projects_all(sort = :date)
+    _open_projects :all , sort, Date.today.year
+  end
+
+  def open_projects_working(sort = :date)
+    _open_projects :working, sort, Date.today.year
+  end
+
+  def open_projects_archive(year,sort = :date)
+    _open_projects :archive, sort, year
+  end
+
+
+  def lookup_path *stuff
+    raise "LOOKUP_PATH(#{stuff}) IS DEPRECATED"
+  end
+  def lookup *stuff
+    raise "LOOKUP(#{stuff}) IS DEPRECATED"
+  end
+
+  # returns project path
+  def lookup_path_by_name(name, dir = :working, year = Date.today.year)
+    projects = map_project_files(dir, year)
+    matches = projects.keys.select{|k| k.downcase.include? name.downcase}
+    return matches.each{|match|
+      projects[match]
+    }
+  end
+
+  # returns opened project
+  def lookup_by_name(name, dir = :working, year = Date.today.year)
+    paths = lookup_path_by_name name, dir, year
+    paths.each {|path|
+      open_project_from_path  path
+    }
+  end
+  
+
+
+  # returns opened project
+  # needs to open projects in order to sort
+  def lookup_by_num(num, dir= :working, sort=:date, year= Date.today.year)
+    projects =  _open_projects(dir, sort, year) 
+    projects.each{|p| puts "#{p.date}: #{p.name}" }
+    #num = num.to_i - 1 if num.class == String and num =~ /^\d*$/
+    num = num.to_i - 1
+    project =  projects[num]
+    @logger.error "there is no project ##{num+1}" if project.nil?
+    return project
+  end
+  
   # opens a project from name
   # TODO implement archive lookup
   def open_project_from_name project_name
@@ -117,39 +178,7 @@ class Luigi < LuigiInternal
     @logger.error "Patherror: #{project_name}"
   end
 
-
-  # returns opened project
-  def lookup_by_name(name, dir = :working, year = Date.today.year)
-    projects = map_project_files(dir, year)
-    matches = projects.keys.select{|k| k.downcase.include? name.downcase}
-    matches.each{|match|
-      open_project_from_path projects[match]
-    }
-  end
   
-
-
-  def lookup_by_num(num, dir= :working, sort=:date, year= Date.today.year)
-    projects = sort_projects( open_projects(dir, year), sort )
-    num = num.to_i - 1
-    project =  projects[num]
-    @logger.error "there is no project ##{num+1}" if project.nil?
-    return project
-  end
-  
-  
-  def sort_projects(projects, sort = :date)
-      raise "sort must be a Symbol" unless sort.class == Symbol
-      if @project_class.method_defined? sort
-          projects.sort_by! {|project| project.method(sort).call}
-          return projects
-      else raise "#{@project_class} does not implement #{sort}()"
-      end
-      return false
-  end
-  
-
-
   ##
   # Path to project folder
   # If the folder exists
@@ -214,7 +243,6 @@ class Luigi < LuigiInternal
   #  @name 
   ## Luigi.archive_project should use ShellSanitizer
   def archive_project(project, year = nil, prefix = '')
-    project = open_project project
     return false unless project.class == @project_class
     
     year ||= project.date.year
@@ -245,7 +273,6 @@ class Luigi < LuigiInternal
   ##
   #  Move to archive directory
   def unarchive_project(project, year = Date.today.year)
-    project = open_project project
     return false unless project.class == @project_class
 
     path         = project.path

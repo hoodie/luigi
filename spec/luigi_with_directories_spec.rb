@@ -161,12 +161,11 @@ describe Luigi do
 
       it "returns path to archived project folder" do
         name = "archived project for get_project_folder"
-        path = @plumber.new_project name
-        project = LuigiProject.new :path => path
+        project = @plumber.new_project name
         expect(@plumber.get_project_folder(name)).to be_truthy
         expect(File).to exist @plumber.get_project_folder(name)
 
-        expect(@plumber.archive_project(name)).to be_truthy
+        expect(@plumber.archive_project(project)).to be_truthy
         expect(File).to exist @plumber.get_project_folder(name,:archive)
       end
 
@@ -206,6 +205,9 @@ describe Luigi do
 
     describe described_class, "#archive_project" do
 
+      before :each do
+        puts "before only runs in #archive_project"
+      end
       it "moves project to archive" do
         name = "old_project"
         project = @plumber.new_project name
@@ -217,9 +219,8 @@ describe Luigi do
       end
 
       it "moves project to archive, with special year" do
-        name = "project_from_2010"
-        project = @plumber.new_project name
-        expect(@plumber.archive_project(name, 2010)).to be_truthy
+        project = @plumber.new_project "project_from_2010"
+        expect(@plumber.archive_project(project, 2010)).to be_truthy
       end
 
       ## TODO uncertain about behaviour: repeating name, is prefix part of name?
@@ -233,18 +234,16 @@ describe Luigi do
     describe described_class, "#unarchive_project" do
 
       it "moves project from archive to working_dir" do
-        name = "reheated_project"
-        project = @plumber.new_project name
+        project = @plumber.new_project "reheated_project"
         expect(File).to exist project.path
-        expect(@plumber.archive_project(name)).to be_truthy
-        expect(@plumber.unarchive_project(name)).to be_truthy
+        expect(@plumber.archive_project(project)).to be_truthy
+        expect(@plumber.unarchive_project(project)).to be_truthy
       end
 
       it "moves project from archive to working_dir" do
-        name = "old_project_from_2010"
-        project = @plumber.new_project name
-        expect(@plumber.archive_project(name,2010)).to be_truthy
-        expect(@plumber.unarchive_project(name,2010)).to be_truthy
+        project = @plumber.new_project "old_project_from_2010"
+        expect(@plumber.archive_project(project,2010)).to be_truthy
+        expect(@plumber.unarchive_project(project,2010)).to be_truthy
       end
 
       it "refuses to move non existent project from archive to working_dir" do
@@ -254,17 +253,17 @@ describe Luigi do
       it "refuses to overwrite project already in archive" do
         name = "previously archived"
         project = @plumber.new_project name
-        expect(@plumber.archive_project(name)).to be_truthy
+        expect(@plumber.archive_project(project)).to be_truthy
         project = @plumber.new_project name
-        expect(@plumber.archive_project(name)).to be_falsey
+        expect(@plumber.archive_project(project)).to be_falsey
       end
 
       it "refuses to overwrite project in working from archive" do
         name = "dont_overwrite me"
         project = @plumber.new_project name
-        expect(@plumber.archive_project(name)).to be_truthy
+        expect(@plumber.archive_project(project)).to be_truthy
         project = @plumber.new_project name
-        expect(@plumber.unarchive_project(name)).to be_falsey
+        expect(@plumber.unarchive_project(project)).to be_falsey
       end
 
     end
@@ -281,31 +280,40 @@ describe Luigi do
 
   context "generally" do
 
-    it "handles space separated filenames" do
+    before :each do
+      @plumber.new_project "listed project"
+    end
+
+    after :each do
+      pp Dir.glob @plumber.dirs[:working]
+      @plumber.new_project "listed project"
+    end
+
+    it "escapes space separated filenames" do
       name = "   space separated filename   "
       project = @plumber.new_project name
       expect(File).to exist project.path
-      expect(@plumber.archive_project(name)).to be_truthy
-      expect(@plumber.unarchive_project(name)).to be_truthy
+      expect(@plumber.archive_project(project)).to be_truthy
+      expect(@plumber.unarchive_project(project)).to be_truthy
       expect(@plumber.get_project_folder(name)).to be_truthy
       expect(@plumber.get_project_folder(name.strip)).to be_truthy
     end
 
-    it "handles dash separated filenames" do
+    it "escapes dash separated filenames" do
       name = "dash/separated/filename"
       project = @plumber.new_project name
       expect(File).to exist project.path
-      expect(@plumber.archive_project(name)).to be_truthy
-      expect(@plumber.unarchive_project(name)).to be_truthy
+      expect(@plumber.archive_project(project)).to be_truthy
+      expect(@plumber.unarchive_project(project)).to be_truthy
       expect(@plumber.get_project_folder(name)).to be_truthy
     end
 
-    it "handles dot separated filenames" do
+    it "escapes dot separated filenames" do
       name = "dot.separated.filename"
       project = @plumber.new_project name
       expect(File).to exist project.path
-      expect(@plumber.archive_project(name)).to be_truthy
-      expect(@plumber.unarchive_project(name)).to be_truthy
+      expect(@plumber.archive_project(project)).to be_truthy
+      expect(@plumber.unarchive_project(project)).to be_truthy
       expect(@plumber.get_project_folder(name)).to be_truthy
     end
 

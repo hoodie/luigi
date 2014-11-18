@@ -62,6 +62,7 @@ class LuigiProject # TO BE LuigiProject
 
   # opens project form path
   def open path
+    @path = path
   end
 
   # returns path

@@ -1,6 +1,7 @@
 # encoding: utf-8
 require 'fileutils'
 require 'logger'
+require 'hashr'
 
 require File.join File.dirname(__FILE__), "luigi/gitplumber"
 require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"

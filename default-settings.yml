@@ -7,7 +7,7 @@ dirs:
   working: working
   archive: archive
 
-  templates: luigi_projects/templates
+  templates: templates
 
 
 #templates: # TODO settings/templates is deprecated, instead autodiscover settings/dirs/templates

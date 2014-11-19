@@ -28,6 +28,7 @@ describe Luigi do
     @spec_template = File.expand_path File.join FileUtils.pwd, './templates/default.yml.erb'
 
     @plumber  = described_class.new $SETTINGS, LuigiProject
+
     @plumber.create_dir :storage
     @plumber.create_dir :working
     @plumber.create_dir :archive

@@ -8,7 +8,7 @@ client:
   email: jon.doe@example.com
 
 event: 
-  name: "<%= data[:project_name] %>"
+  name: "<%= "test project" %>"
   location: # might be a list
   dates:
   - begin: <%= (Date.today+ 15).strftime "%d.%m.%Y" %> # bezieht sich auf die veranstaltung selbst
@@ -30,4 +30,4 @@ invoice:
 
 
     
-manager: <%= settings['manager_name'] %>
+manager: <%= "boss" %>

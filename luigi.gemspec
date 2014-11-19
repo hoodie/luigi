@@ -9,7 +9,8 @@ Gem::Specification.new do |s|
   s.email       = "hendrik@hoodie.de"
   s.homepage    = "https://github.com/hoodie/luigi"
   s.summary     = "luigi - a plumber"
-  s.description = ""
+  s.description = "A project manager that keeps track of a working directory, archive and template files.
+  Used in commandline tools like ascii-invoicer."
   s.required_ruby_version     = '>= 1.9'
   s.files = Dir.glob('lib/*') + Dir.glob('lib/*/*')
   #s.extra_rdoc_files = ["README.md", "LICENSE.md"]

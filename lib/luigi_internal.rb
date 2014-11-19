@@ -24,7 +24,7 @@ class LuigiInternal
     @dirs[:storage]   = File.expand_path(File.join(@settings['path'], @settings['dirs']['storage']))
     @dirs[:working]   = File.join @dirs[:storage], @settings['dirs']['working']
     @dirs[:archive]   = File.join @dirs[:storage], @settings['dirs']['archive']
-    @dirs[:templates] = File.expand_path File.join @settings['path'], @settings['dirs']['templates']
+    @dirs[:templates]   = File.join @dirs[:storage], @settings['dirs']['templates']
   end
 
   ##

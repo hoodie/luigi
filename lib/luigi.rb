@@ -5,6 +5,7 @@ require 'hashr'
 
 require File.join File.dirname(__FILE__), "luigi_internal"
 require File.join File.dirname(__FILE__), "luigi_project"
+require File.join File.dirname(__FILE__), "luigi_projects_list"
 require File.join File.dirname(__FILE__), "luigi/gitplumber"
 require File.join File.dirname(__FILE__), "luigi/ShellSanitizer"
 
@@ -100,7 +101,7 @@ class Luigi < LuigiInternal
       project = open_project_from_path(path)
       projects <<  project if project.STATUS == :ok
     }
-    projects = sort_projects(projects, sort)
+    projects = LuigiProjectsList.new sort_projects(projects, sort)
     return projects
   end
 
@@ -129,13 +130,6 @@ class Luigi < LuigiInternal
   end
 
 
-  def lookup_path *stuff
-    raise "LOOKUP_PATH(#{stuff}) IS DEPRECATED"
-  end
-  def lookup *stuff
-    raise "LOOKUP(#{stuff}) IS DEPRECATED"
-  end
-
   # returns project path
   def lookup_path_by_name(name, dir = :working, year = Date.today.year)
     projects = map_project_files(dir, year)
@@ -144,16 +138,6 @@ class Luigi < LuigiInternal
       projects[match]
     }
   end
-
-  # returns opened project
-  def lookup_by_name(name, dir = :working, year = Date.today.year)
-    paths = lookup_path_by_name name, dir, year
-    paths.each {|path|
-      open_project_from_path  path
-    }
-  end
-  
-
 
   # returns opened project
   # needs to open projects in order to sort

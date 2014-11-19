@@ -114,7 +114,8 @@ class LuigiInternal
     map = {}
     folders = Dir.glob File.join @dirs[:working], "/*"
     paths = folders.map {|path| get_project_file_path File.basename path }
-    paths.each {|path| map[File.basename path, @file_extension] = path }
+    paths.select!{|path| path} # removing faulty paths
+    paths.each   {|path| map[File.basename path, @file_extension] = path }
     return map
   end
 

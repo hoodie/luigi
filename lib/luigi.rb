@@ -33,6 +33,7 @@ class Luigi < LuigiInternal
 
     init_logger()
     init_dirs()
+    load_templates()
   end
 
   ##
@@ -61,6 +62,7 @@ class Luigi < LuigiInternal
     load_templates()
 
     template = @templates[template]
+    data[:project_name] = name
 
     # create project folder
     folder = _new_project_folder(name)
@@ -99,7 +101,7 @@ class Luigi < LuigiInternal
     projects = []
     opened_paths.each {|path|
       project = open_project_from_path(path)
-      projects <<  project if project.STATUS == :ok
+      projects <<  project if project.status == :ok
     }
     projects = LuigiProjectsList.new sort_projects(projects, sort)
     return projects

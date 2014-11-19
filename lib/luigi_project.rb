@@ -2,9 +2,9 @@ require 'date'
 require 'logger'
 
 
-class LuigiProject # TO BE LuigiProject
+class LuigiProject
 
-  attr_reader :using_erb
+  attr_reader :status, :using_erb
 
   # initializes the project
   # opens project from :path.
@@ -15,6 +15,7 @@ class LuigiProject # TO BE LuigiProject
     @settings      = hash[:settings]
     @template_path = hash[:template_path]
     @data          = hash[:data]
+    @data        ||= {}
 
     @logger = Logger.new STDOUT
     @logger.progname = "LuigiProject"
@@ -46,13 +47,15 @@ class LuigiProject # TO BE LuigiProject
     end
   end
 
-  def create_with_erb template_path
-    data = @data
-    settings = @settings
-    engine=ERB.new(File.read(template_path),nil,'<>')
-    result = engine.result(binding)
+  def fill_template
+    return binding
+  end
 
-    #puts "writing into #{@path}"
+  def create_with_erb template_path
+    engine=ERB.new(File.read(template_path),nil,'<>')
+    b = fill_template()
+    result = engine.result(b)
+
     file = File.new @path, "w"
     result.lines.each do |line|
       file.write line
@@ -78,10 +81,6 @@ class LuigiProject # TO BE LuigiProject
   # returns index
   def index
     123
-  end
-
-  def STATUS
-    :ok # at least :ok or anything else
   end
 
   def date

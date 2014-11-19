@@ -24,7 +24,7 @@ class LuigiInternal
     @dirs[:storage]   = File.expand_path(File.join(@settings['path'], @settings['dirs']['storage']))
     @dirs[:working]   = File.join @dirs[:storage], @settings['dirs']['working']
     @dirs[:archive]   = File.join @dirs[:storage], @settings['dirs']['archive']
-    @dirs[:templates]   = File.join @dirs[:storage], @settings['dirs']['templates']
+    @dirs[:templates] = File.join @dirs[:storage], @settings['dirs']['templates']
   end
 
   ##
@@ -32,7 +32,7 @@ class LuigiInternal
   # dir can be either :storage, :working or :archive
   # and also :templates
   def check_dir(dir)
-    File.exists? "#{@dirs[dir]}"
+    File.exists? @dirs[dir]
   end
 
   ##
@@ -47,7 +47,8 @@ class LuigiInternal
   # read the templates directory and cache paths
   def load_templates
     return false unless check_dir :templates
-    files = Dir.glob File.join @dirs[:templates] , ?*
+    #files = Dir.glob File.join @dirs[:templates] , ?*
+    files = Dir.glob File.join(@dirs[:templates], "*{#{@file_extension}.erb,#{@file_extension}}")
     @templates =  {}
     files.each{|file|
       name = File.basename file.split(?.)[0]

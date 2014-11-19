@@ -42,7 +42,7 @@ class Luigi < LuigiInternal
   def create_dir(dir)
     unless check_dir(dir)
       if dir == :storage or check_dir :storage
-        FileUtils.mkdir "#{@dirs[dir]}"
+        FileUtils.mkdir @dirs[dir]
         @logger.info "Created \"#{dir.to_s}\" Directory (#{@dirs[dir]})"
         return true
       end

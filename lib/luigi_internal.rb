@@ -21,10 +21,12 @@ class LuigiInternal
 
   def init_dirs
     @dirs = {}
-    @dirs[:storage]   = File.expand_path(File.join(@settings['path'], @settings['dirs']['storage']))
-    @dirs[:working]   = File.join @dirs[:storage], @settings['dirs']['working']
-    @dirs[:archive]   = File.join @dirs[:storage], @settings['dirs']['archive']
-    @dirs[:templates] = File.join @dirs[:storage], @settings['dirs']['templates']
+    if @settings.dirs.storage?
+      @dirs[:storage]   = File.expand_path(File.join(@settings.path, @settings['dirs']['storage']))
+      @dirs[:working]   = File.join @dirs[:storage], @settings.dirs.working
+      @dirs[:archive]   = File.join @dirs[:storage], @settings.dirs.archive
+      @dirs[:templates] = File.join @dirs[:storage], @settings.dirs.templates
+    end
   end
 
   ##

@@ -61,7 +61,9 @@ class Luigi < LuigiInternal
 
     load_templates()
 
-    template = @templates[template]
+    template_path = @templates[template]
+    raise "No such template." unless @templates.keys.include? template
+    raise "Template file does not exists." unless File.exists? template_path
     data[:project_name] = name
 
     # create project folder
@@ -73,7 +75,7 @@ class Luigi < LuigiInternal
       project = @project_class.new({
         :path          => target,
         :settings      => @settings,
-        :template_path => template,
+        :template_path => template_path,
         :data          => data }
                                   )
 

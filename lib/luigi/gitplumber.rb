@@ -37,7 +37,7 @@ module GitPlumber
       table.add_row [
         commit.author.name,
         commit.message,
-        commit.date.strftime("%H:%M Uhr — %d.%m.%Y"),
+        commit.date.strftime("%d.%m.%Y-%H:%M"),
       ]
     end
     puts table

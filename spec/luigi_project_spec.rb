@@ -72,11 +72,11 @@ describe LuigiProject do
   end
 
   it "creates a new file from a static template" do
-    expect(File).to exist @project_static.path 
+    expect(File).to exist @project_static.path
   end
 
   it "creates a new file from an erb template" do
-    expect(File).to exist @project_erb.path 
+    expect(File).to exist @project_erb.path
   end
 
   it "fills erb from project data"

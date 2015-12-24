@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-class ShellSanitizer 
+class ShellSanitizer
   REPLACE_HASH = {
     ?“ => '"', ?” => '"', ?‘ => "'", ?’ => "'", ?„ => '"',
 
@@ -24,7 +24,7 @@ class ShellSanitizer
 
 ## TODO somebody find me a gem that works and I'll replace this
   def self.deumlautify(string)
-    REPLACE_HASH.each{|k,v| string = string.gsub k, v }
+    REPLACE_HASH.each{|k,v| string = string.force_encoding("UTF-8").gsub k, v }
     string.each_char.to_a.keep_if {|c| c.ascii_only?}
     return string
   end
@@ -33,8 +33,8 @@ class ShellSanitizer
     path = path.strip()
     path = deumlautify path
     path.sub!(/^\./,'') # removes hidden_file_dot '.' from the begging
-    path.gsub!(/\//,'_') 
-    path.gsub!(/\//,'_') 
+    path.gsub!(/\//,'_')
+    path.gsub!(/\//,'_')
     return path
   end
 

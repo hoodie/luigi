@@ -50,7 +50,7 @@ class Luigi < LuigiInternal
     end
     return false
   end
- 
+
 
   ##
   # creates new project_dir and project_file
@@ -71,7 +71,7 @@ class Luigi < LuigiInternal
 
     if folder
       target = File.join folder, name+@file_extension
-      # project will load template and 
+      # project will load template and
       project = @project_class.new({
         :path          => target,
         :settings      => @settings,
@@ -97,7 +97,7 @@ class Luigi < LuigiInternal
     if dir==:all
       opened_paths    = list_project_files_all
     else
-      opened_paths    = list_project_files dir, year 
+      opened_paths    = list_project_files dir, year
     end
 
     projects = []
@@ -146,7 +146,7 @@ class Luigi < LuigiInternal
   # returns opened project
   # needs to open projects in order to sort
   def lookup_by_num(num, dir= :working, sort=:date, year= Date.today.year)
-    projects =  _open_projects(dir, sort, year) 
+    projects =  _open_projects(dir, sort, year)
     projects.each{|p| puts "#{p.date}: #{p.name}" }
     #num = num.to_i - 1 if num.class == String and num =~ /^\d*$/
     num = num.to_i - 1
@@ -154,7 +154,7 @@ class Luigi < LuigiInternal
     @logger.error "there is no project ##{num+1}" if project.nil?
     return project
   end
-  
+
   # opens a project from name
   # TODO implement archive lookup
   def open_project_from_name project_name
@@ -166,11 +166,11 @@ class Luigi < LuigiInternal
     @logger.error "Patherror: #{project_name}"
   end
 
-  
+
   ##
   # Path to project folder
   # If the folder exists
-  # dir can be :working or :archive 
+  # dir can be :working or :archive
   #
   # TODO untested for archives
   def get_project_folder( name, dir=:working, year=Date.today.year )
@@ -228,11 +228,11 @@ class Luigi < LuigiInternal
 
   ##
   #  Move to archive directory
-  #  @name 
+  #  @name
   ## Luigi.archive_project should use ShellSanitizer
   def archive_project(project, year = nil, prefix = '')
     return false unless project.class == @project_class
-    
+
     year ||= project.date.year
     year_folder = File.join @dirs[:archive], year.to_s
     FileUtils.mkdir year_folder unless File.exists? year_folder

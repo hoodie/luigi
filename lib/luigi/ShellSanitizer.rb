@@ -24,6 +24,7 @@ class ShellSanitizer
 
 ## TODO somebody find me a gem that works and I'll replace this
   def self.deumlautify(string)
+    string = string.dup
     REPLACE_HASH.each{|k,v| string = string.force_encoding("UTF-8").gsub k, v }
     string.each_char.to_a.keep_if {|c| c.ascii_only?}
     return string

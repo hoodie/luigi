@@ -13,7 +13,7 @@ class LuigiProjectsList < Array
     raise "#{thing}" unless [:name, :date, :index].include? thing
 
     selection = self.map{|project|
-      if project.instance_methods.includes? thing  and project.method(thing).call.to_s.downcase.include? value.to_s.downcase
+      if project.methods.include? thing  and project.method(thing).call.to_s.downcase.include? value.to_s.downcase
         project
       end
     }

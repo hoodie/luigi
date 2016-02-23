@@ -10,15 +10,14 @@ class LuigiProjectsList < Array
 
 
   def lookup_by_anything thing, value
-    project_class = self[0].class
-    raise "#{project_class} does not implement #{thing.to_s}()" unless project_class.instance_methods.include? thing
     raise "#{thing}" unless [:name, :date, :index].include? thing
 
-    selection = self.map{|project| 
-      project if project.method(thing).call.to_s.downcase.include? value.to_s.downcase
+    selection = self.map{|project|
+      if project.instance_methods.includes? thing  and project.method(thing).call.to_s.downcase.include? value.to_s.downcase
+        project
+      end
     }
     selection.select{|p|p}
-
   end
 
   def lookup_by_index index
